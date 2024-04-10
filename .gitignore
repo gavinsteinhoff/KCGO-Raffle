@@ -361,4 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-/Raffle.Blazor/appsettings.Development.json
+
+# appsettings
+**/*/appsettings.Development.json
