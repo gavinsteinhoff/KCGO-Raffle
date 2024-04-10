@@ -1,0 +1,111 @@
+﻿@inject RaffleService _raffleService
+@page "/"
+@attribute [StreamRendering(true)]
+
+<PageTitle>Home</PageTitle>
+
+@if (!_raffleService.Authenticated)
+{
+    <div class="row">
+        <div class="col-2">
+            <div class="form-floating mb-3">
+                <input type="password" class="form-control" id="floatingPassword" placeholder="Password" @bind="password">
+                <label for="floatingPassword">Password</label>
+            </div>
+            <button @onclick="Authenticate" type="button" class="btn btn-primary">Submit</button>
+        </div>
+    </div>
+}
+else
+{
+    @if (_raffleService.RaffleDto is null)
+    {
+        <p>Loading</p>
+    }
+    else
+    {
+        <div class="row mb-5">
+            <div class="col-3">
+                <button @onclick="GetWinner" type="button" class="btn btn-primary">Get Username</button>
+                <button @onclick="Win" type="button" class="btn btn-success">Win</button>
+                <button @onclick="Fail" type="button" class="btn btn-danger">Fail</button>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-3 fs-3">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Eligible Usernames</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in _raffleService.RaffleDto.UserDtos.Where(x => x.Status == "0").OrderBy(x => x.Username))
+                        {
+                            <tr>
+                                <td>@user.Username</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-9 fs-1">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Username</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">TicketType</th>
+                            <th scope="col">Ticket ID</th>
+                            <th scope="col">Event ID</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (_raffleService.CurrentUser is not null)
+                        {
+                            <tr class="table-primary">
+                                <td>@_raffleService.CurrentUser.Username</td>
+                                <td>Drawn</td>
+                                <td>@_raffleService.CurrentUser.TicketType</td>
+                                <td>@_raffleService.CurrentUser.TicketId</td>
+                                <td>@_raffleService.CurrentUser.EventId</td>
+                            </tr>
+                        }
+                        @foreach (var user in _raffleService.RaffleDto.UserDtos.Where(x => x.Status != "0").OrderByDescending(x => x.WonAt))
+                        {
+                            <tr>
+                                <td>@user.Username</td>
+                                <td>@StatusString(user.Status)</td>
+                                <td>@user.TicketType</td>
+                                <td>@user.TicketId</td>
+                                <td>@user.EventId</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private string password = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await _raffleService.InitAsync(95);
+    }
+
+    private void Authenticate()
+    {
+        _raffleService.Authenticate(password);
+        password = string.Empty;
+    }
+
+    private string StatusString(string status) => status == "1" ? "Won" : "Fail";
+    private void GetWinner() => _raffleService.GetWinner();
+    private async Task Win() => await _raffleService.Resolve("1");
+    private async Task Fail() => await _raffleService.Resolve("2");
+}
+
